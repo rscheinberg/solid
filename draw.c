@@ -22,11 +22,11 @@
 void scanline_convert( struct matrix *points, int i, screen s, zbuffer zb ) {
     
   //yay variables
-  double x0, y0, z0, x1, y1, z1, x2, y2, z2, bx, by, bz, mx, my, mz, tx, ty, tz, dx0, dy0, dz0, dx1, dy1, dz1;
+  double x0, z0, x1, z1, bx, by, bz, mx, my, mz, tx, ty, tz, dx0, dz0, dx1, dz1;
   int b = i;
   int m = i + 1;
   int t = i + 2;
-  int switched = 0;
+  int change = 0;
   
   //find the bot, top, mid
   if(points->m[1][t] < points->m[1][m] || points->m[1][t] < points->m[1][b]) {
@@ -69,30 +69,33 @@ void scanline_convert( struct matrix *points, int i, screen s, zbuffer zb ) {
   z0 = bz;
   z1 = bz;
 
-  // calculate delta for x endpoints, z endpoints
-  dx0 = ((int)ty - (int)by) == 0 ? 0 : (tx - bx) / ((int)ty - (int)by);
-  dx1 = ((int)my - (int)by) == 0 ? 0 : (mx - bx) / ((int)my - (int)by);
-  dz0 = ((int)ty - (int)by) == 0 ? 0 : (tz - bz) / ((int)ty - (int)by);
-  dz1 = ((int)my - (int)by) == 0 ? 0 : (mz - bz) / ((int)my - (int)by);
+  //some math here and there
+  dx0 = 0;
+  if((int)ty - (int)by != 0) dx0 = (tx - bx) / ((int)ty - (int)by);
+  
+  dx1 = 0;
+  if((int)my - (int)by != 0) dx1 = (mx - bx) / ((int)my - (int)by);
+  
+  dz0 = 0;
+  if((int)ty - (int)by != 0) dz0 = (tz - bz) / ((int)ty - (int)by);
+  
+  dz1 = 0;
+  if((int)my - (int)by != 0) dz1 = (mz - bz) / ((int)my - (int)by);
 
-  // for each y from bottom to top
+  //loop
   for (int y = by; y <= (int) ty; y++) {
-
-    // check if above middle, switch delta and endpoints from bm to mt
-    if (!switched && y >= (int)my) {
-      switched = 1;
+    if (y >= (int)my && !change) {
       dx1 = ((int)ty - (int)my) == 0 ? 0 : (tx - mx) / ((int)ty - (int)my);
       dz1 = ((int)ty - (int)my) == 0 ? 0 : (tz - mz) / ((int)ty - (int)my);
       x1 = mx;
       z1 = mz;
+      change = 1;
     }
-
-    // draw line, then set new endpoints
     draw_line(x0, y, z0, x1, y, z1, s, zb, c);
-    x0 += dx0;
-    x1 += dx1;
     z0 += dz0;
     z1 += dz1;
+    x0 += dx0;
+    x1 += dx1;
   }
 }
 
